@@ -17,6 +17,9 @@ import {Hooks} from "v4-core/libraries/Hooks.sol";
 contract PointsHook is BaseHook, ERC1155 {
     constructor(IPoolManager _manager) BaseHook(_manager) {}
 
+    mapping(address => bool) public hasClaimedBonus;
+    uint256 public constant FIRST_SWAP_BONUS = 10;
+
     function getHookPermissions()
         public
         pure
@@ -92,8 +95,16 @@ contract PointsHook is BaseHook, ERC1155 {
         // nobody gets any points
         if (user == address(0)) return;
 
+        uint256 totalPoints = points;
+
+        // Give a one-time bonus for first-ever swap
+        if (!hasClaimedBonus[user]) {
+            totalPoints += FIRST_SWAP_BONUS;
+            hasClaimedBonus[user] = true;
+        }
+
         // Mint points to the user
         uint256 poolIdUint = uint256(PoolId.unwrap(poolId));
-        _mint(user, poolIdUint, points, "");
+        _mint(user, poolIdUint, totalPoints, "");
     }
 }
