@@ -101,13 +101,8 @@ contract TestPointsHook is Test, Deployers, ERC1155TokenReceiver {
             poolIdUint
         );
 
-        // Set user address in hook data
         bytes memory hookData = abi.encode(address(this));
 
-        // Now we swap
-        // We will swap 0.001 ether for tokens
-        // We should get 20% of 0.001 * 10**18 points
-        // = 2 * 10**14
         swapRouter.swap{value: 0.001 ether}(
             key,
             SwapParams({
@@ -125,6 +120,28 @@ contract TestPointsHook is Test, Deployers, ERC1155TokenReceiver {
             address(this),
             poolIdUint
         );
-        assertEq(pointsBalanceAfterSwap - pointsBalanceOriginal, 2 * 10 ** 14);
+        assertEq(pointsBalanceAfterSwap - pointsBalanceOriginal, (2 * 10 ** 14) + 10);
+
+        swapRouter.swap{value: 0.001 ether}(
+            key,
+            SwapParams({
+                zeroForOne: true,
+                amountSpecified: -0.001 ether, // Exact input for output swap
+                sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
+            }),
+            PoolSwapTest.TestSettings({
+                takeClaims: false,
+                settleUsingBurn: false
+            }),
+            hookData
+        );
+
+        uint256 pointsBalanceAfterSecondSwap = hook.balanceOf(
+            address(this),
+            poolIdUint
+        );
+
+        assertEq(pointsBalanceAfterSecondSwap - pointsBalanceAfterSwap, 2 * 10 ** 14);
+
     }
 }
